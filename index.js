@@ -39,7 +39,7 @@ app.post("/tasks", function(req, res) {
         text: task,
         completed: false,
         dueDate: dueDate || null,
-        priority: priority || "medium" // ✅ default to medium
+        priority: priority || "medium" //  default to medium
     });
     saveTasks(tasks);
 
@@ -83,7 +83,7 @@ app.put("/tasks/:index", function(req, res) {
 
     tasks[index].text = task;
     tasks[index].dueDate = dueDate || null;
-    tasks[index].priority = priority || "medium"; // ✅ update priority too
+    tasks[index].priority = priority || "medium"; //  update priority too
     saveTasks(tasks);
 
     res.json({ message: "Task Updated", tasks });
