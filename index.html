@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskManager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Task Manager</h1>
+        <p class="subtitle">Stay organized, get things done ✨</p>
+
+        <!-- ✅ Task Counter -->
+        <div class="task-counter">
+            <div>Total <span id="totalCount">0</span> tasks</div>
+            <div><span id="doneCount">0</span> completed</div>
+        </div>
+
+        <!-- ✅ Input Group -->
+        <div class="input-group">
+            <div class="input-row">
+                <input type="text" id="taskInput" placeholder="What needs to be done?">
+                <button onclick="addTask()">Add</button>
+            </div>
+            <div class="input-row">
+                <input type="date" id="dueDateInput">
+
+                <!-- ✅ Priority Dropdown -->
+                <select id="priorityInput">
+                    <option value="low">🟢 Low</option>
+                    <option value="medium" selected>🟡 Medium</option>
+                    <option value="high">🔴 High</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ✅ Filter Buttons -->
+        <div class="filter-group">
+            <button class="filter-btn active" onclick="setFilter('all')">All</button>
+            <button class="filter-btn" onclick="setFilter('active')">Active</button>
+            <button class="filter-btn" onclick="setFilter('completed')">Completed</button>
+            <button class="filter-btn" onclick="setFilter('high')">🔴 High</button>
+        </div>
+
+        <ul id="taskList"></ul>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Task</h3>
+            <input type="text" id="editInput" placeholder="Edit your task...">
+            <input type="date" id="editDueDateInput">
+
+            <!-- ✅ Priority Dropdown in modal -->
+            <select id="editPriorityInput">
+                <option value="low">🟢 Low Priority</option>
+                <option value="medium">🟡 Medium Priority</option>
+                <option value="high">🔴 High Priority</option>
+            </select>
+
+            <div class="modal-buttons">
+                <button class="save-btn" onclick="updateTask()">Save</button>
+                <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
