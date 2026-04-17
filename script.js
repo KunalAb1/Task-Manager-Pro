@@ -1,9 +1,9 @@
 const API_URL = "http://localhost:3000/tasks";
 
 let currentIndex = null;
-let currentFilter = "all"; // ✅ track active filter
+let currentFilter = "all"; // track active filter
 
-// ✅ Format date
+//  Format date
 function formatDate(dateStr) {
     if (!dateStr) return null;
     const [year, month, day] = dateStr.split("-");
@@ -15,7 +15,7 @@ function formatDate(dateStr) {
     });
 }
 
-// ✅ Check if overdue
+//  Check if overdue
 function isOverdue(dateStr) {
     if (!dateStr) return false;
     const today = new Date();
@@ -25,7 +25,7 @@ function isOverdue(dateStr) {
     return due < today;
 }
 
-// ✅ Priority badge helper
+//  Priority badge helper
 function getPriorityBadge(priority) {
     const map = {
         high:   { label: "High",   class: "priority-high" },
@@ -36,7 +36,7 @@ function getPriorityBadge(priority) {
     return `<span class="priority-badge ${p.class}">${p.label}</span>`;
 }
 
-// ✅ Set active filter
+// Set active filter
 function setFilter(filter) {
     currentFilter = filter;
 
@@ -55,13 +55,13 @@ async function getTasks() {
 
     let tasks = data.tasks;
 
-    // ✅ update counter (always based on all tasks)
+    //  update counter (always based on all tasks)
     const total = tasks.length;
     const done = tasks.filter(t => t.completed).length;
     document.getElementById("totalCount").textContent = total;
     document.getElementById("doneCount").textContent = done;
 
-    // ✅ apply filter
+    //  apply filter
     if (currentFilter === "active") {
         tasks = tasks.filter(t => !t.completed);
     } else if (currentFilter === "completed") {
@@ -73,7 +73,7 @@ async function getTasks() {
     const list = document.getElementById("taskList");
     list.innerHTML = "";
 
-    // ✅ empty state
+    //  empty state
     if (tasks.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
@@ -133,13 +133,13 @@ async function addTask() {
         body: JSON.stringify({
             task,
             dueDate: dueDateInput.value || null,
-            priority: priorityInput.value  // ✅ send priority
+            priority: priorityInput.value  //  send priority
         })
     });
 
     input.value = "";
     dueDateInput.value = "";
-    priorityInput.value = "medium"; // ✅ reset to medium
+    priorityInput.value = "medium"; //  reset to medium
     getTasks();
 }
 
@@ -170,7 +170,7 @@ function editTask(index) {
             const task = data.tasks[index];
             textInput.value = task.text;
             dueDateInput.value = task.dueDate || "";
-            priorityInput.value = task.priority || "medium"; // ✅ pre-fill priority
+            priorityInput.value = task.priority || "medium"; //  pre-fill priority
             modal.style.display = "flex";
         });
 }
@@ -190,7 +190,7 @@ async function updateTask() {
         body: JSON.stringify({
             task: newTask,
             dueDate: dueDateInput.value || null,
-            priority: priorityInput.value // ✅ send updated priority
+            priority: priorityInput.value //  send updated priority
         })
     });
 
