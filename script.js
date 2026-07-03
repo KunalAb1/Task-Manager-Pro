@@ -1,9 +1,122 @@
-const API_URL = "http://localhost:3000/tasks";
+const API_URL = "/tasks";
+const AUTH_URL = "/auth";
 
-let currentIndex = null;
-let currentFilter = "all"; // ✅ track active filter
+let currentTaskId = null;
+let currentFilter = "all";
+let isSignupMode = false;
 
-// ✅ Format date
+// ===== Auth Functions =====
+
+function toggleAuthMode() {
+    isSignupMode = !isSignupMode;
+    document.getElementById("authTitle").textContent = isSignupMode ? "Sign Up" : "Login";
+    document.getElementById("authSubmitBtn").textContent = isSignupMode ? "Sign Up" : "Login";
+    document.getElementById("signupNameRow").style.display = isSignupMode ? "block" : "none";
+    document.getElementById("authToggleText").innerHTML = isSignupMode
+        ? `Already have an account? <a href="#" onclick="toggleAuthMode()">Login</a>`
+        : `Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign up</a>`;
+    document.getElementById("authError").textContent = "";
+}
+
+async function handleAuthSubmit() {
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value.trim();
+    const errorEl = document.getElementById("authError");
+    errorEl.textContent = "";
+
+    if (!email || !password) {
+        errorEl.textContent = "Email and password are required";
+        return;
+    }
+
+    if (isSignupMode) {
+        const name = document.getElementById("signupName").value.trim();
+        if (!name) {
+            errorEl.textContent = "Name is required";
+            return;
+        }
+
+        try {
+            const res = await fetch(`${AUTH_URL}/signup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password }),
+                credentials: "include",
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                errorEl.textContent = data.message || "Signup failed";
+                return;
+            }
+            // Auto-login after signup
+            await performLogin(email, password);
+        } catch {
+            errorEl.textContent = "Something went wrong. Please try again.";
+        }
+    } else {
+        await performLogin(email, password);
+    }
+}
+
+async function performLogin(email, password) {
+    const errorEl = document.getElementById("authError");
+    try {
+        const res = await fetch(`${AUTH_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            errorEl.textContent = data.message || "Login failed";
+            return;
+        }
+        showTaskApp(data.data.name);
+    } catch {
+        errorEl.textContent = "Something went wrong. Please try again.";
+    }
+}
+
+async function checkLoggedIn() {
+    try {
+        const res = await fetch(`${AUTH_URL}/getuser`, {
+            credentials: "include",
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showTaskApp(data.data.name);
+        } else {
+            showAuthSection();
+        }
+    } catch {
+        showAuthSection();
+    }
+}
+
+function showTaskApp(name) {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("taskApp").style.display = "block";
+    document.getElementById("userName").textContent = name;
+    getTasks();
+}
+
+function showAuthSection() {
+    document.getElementById("authSection").style.display = "flex";
+    document.getElementById("taskApp").style.display = "none";
+}
+
+function handleLogout() {
+    document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    showAuthSection();
+}
+
+// Check login status when page loads
+checkLoggedIn();
+
+// ===== Task Functions =====
+
 function formatDate(dateStr) {
     if (!dateStr) return null;
     const [year, month, day] = dateStr.split("-");
@@ -15,7 +128,6 @@ function formatDate(dateStr) {
     });
 }
 
-// ✅ Check if overdue
 function isOverdue(dateStr) {
     if (!dateStr) return false;
     const today = new Date();
@@ -25,7 +137,6 @@ function isOverdue(dateStr) {
     return due < today;
 }
 
-// ✅ Priority badge helper
 function getPriorityBadge(priority) {
     const map = {
         high:   { label: "High",   class: "priority-high" },
@@ -36,32 +147,29 @@ function getPriorityBadge(priority) {
     return `<span class="priority-badge ${p.class}">${p.label}</span>`;
 }
 
-// ✅ Set active filter
 function setFilter(filter) {
     currentFilter = filter;
-
-    // update active button
     document.querySelectorAll(".filter-btn").forEach(btn => {
         btn.classList.remove("active");
     });
     event.target.classList.add("active");
-
     getTasks();
 }
 
 async function getTasks() {
-    const res = await fetch(API_URL);
+    const res = await fetch(API_URL, { credentials: "include" });
+    if (!res.ok) {
+        showAuthSection();
+        return;
+    }
     const data = await res.json();
-
     let tasks = data.tasks;
 
-    // ✅ update counter (always based on all tasks)
     const total = tasks.length;
     const done = tasks.filter(t => t.completed).length;
     document.getElementById("totalCount").textContent = total;
     document.getElementById("doneCount").textContent = done;
 
-    // ✅ apply filter
     if (currentFilter === "active") {
         tasks = tasks.filter(t => !t.completed);
     } else if (currentFilter === "completed") {
@@ -73,7 +181,6 @@ async function getTasks() {
     const list = document.getElementById("taskList");
     list.innerHTML = "";
 
-    // ✅ empty state
     if (tasks.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
@@ -83,11 +190,10 @@ async function getTasks() {
         return;
     }
 
-    tasks.forEach(function(task, index) {
+    tasks.forEach(function(task) {
         const li = document.createElement("li");
         li.className = task.completed ? "completed" : "";
 
-        // due date badge
         let dueBadge = "";
         if (task.dueDate) {
             const overdue = !task.completed && isOverdue(task.dueDate);
@@ -100,7 +206,7 @@ async function getTasks() {
             <div class="task-left">
                 <input type="checkbox"
                     ${task.completed ? "checked" : ""}
-                    onclick="toggleTask(${index})">
+                    onclick="toggleTask('${task._id}')">
                 <div class="task-info">
                     <div class="task-title-row">
                         <span>${task.text}</span>
@@ -110,15 +216,14 @@ async function getTasks() {
                 </div>
             </div>
             <div class="task-buttons">
-                <button onclick="editTask(${index})">✏️</button>
-                <button onclick="deleteTask(${index})">🗑️</button>
+                <button onclick="editTask('${task._id}')">✏️</button>
+                <button onclick="deleteTask('${task._id}')">🗑️</button>
             </div>
         `;
         list.appendChild(li);
     });
 }
 
-// Add task
 async function addTask() {
     const input = document.getElementById("taskInput");
     const dueDateInput = document.getElementById("dueDateInput");
@@ -130,52 +235,51 @@ async function addTask() {
     await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
             task,
             dueDate: dueDateInput.value || null,
-            priority: priorityInput.value  // ✅ send priority
+            priority: priorityInput.value
         })
     });
 
     input.value = "";
     dueDateInput.value = "";
-    priorityInput.value = "medium"; // ✅ reset to medium
+    priorityInput.value = "medium";
     getTasks();
 }
 
-// Enter key support
 document.getElementById("taskInput").addEventListener("keypress", function(e) {
     if (e.key === "Enter") addTask();
 });
 
-// Toggle completion
-async function toggleTask(index) {
-    await fetch(`${API_URL}/${index}/toggle`, {
-        method: "PATCH"
+async function toggleTask(id) {
+    await fetch(`${API_URL}/${id}/toggle`, {
+        method: "PATCH",
+        credentials: "include",
     });
     getTasks();
 }
 
-// Edit task
-function editTask(index) {
-    currentIndex = index;
+function editTask(id) {
+    currentTaskId = id;
     const modal = document.getElementById("editModal");
     const textInput = document.getElementById("editInput");
     const dueDateInput = document.getElementById("editDueDateInput");
     const priorityInput = document.getElementById("editPriorityInput");
 
-    fetch(API_URL)
+    fetch(API_URL, { credentials: "include" })
         .then(res => res.json())
         .then(data => {
-            const task = data.tasks[index];
+            const task = data.tasks.find(t => t._id === id);
+            if (!task) return;
             textInput.value = task.text;
-            dueDateInput.value = task.dueDate || "";
-            priorityInput.value = task.priority || "medium"; // ✅ pre-fill priority
+            dueDateInput.value = task.dueDate ? task.dueDate.split("T")[0] : "";
+            priorityInput.value = task.priority || "medium";
             modal.style.display = "flex";
         });
 }
 
-// Update task
 async function updateTask() {
     const input = document.getElementById("editInput");
     const dueDateInput = document.getElementById("editDueDateInput");
@@ -184,13 +288,14 @@ async function updateTask() {
 
     if (!newTask) return;
 
-    await fetch(`${API_URL}/${currentIndex}`, {
+    await fetch(`${API_URL}/${currentTaskId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
             task: newTask,
             dueDate: dueDateInput.value || null,
-            priority: priorityInput.value // ✅ send updated priority
+            priority: priorityInput.value
         })
     });
 
@@ -202,13 +307,10 @@ function closeModal() {
     document.getElementById("editModal").style.display = "none";
 }
 
-// Delete task
-async function deleteTask(index) {
-    await fetch(`${API_URL}/${index}`, {
-        method: "DELETE"
+async function deleteTask(id) {
+    await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        credentials: "include",
     });
     getTasks();
 }
-
-// Load on start
-getTasks();

@@ -1,13 +1,13 @@
 {
   "tasks": [
     {
-      "text": "X\\X\\XS",
-      "completed": true,
+      "text": "Learn",
+      "completed": false,
       "dueDate": null,
-      "priority": "high"
+      "priority": "medium"
     },
     {
-      "text": "N",
+      "text": "Gym",
       "completed": false,
       "dueDate": null,
       "priority": "medium"
